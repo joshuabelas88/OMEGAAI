@@ -1,4 +1,3 @@
-```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
@@ -58,4 +57,3 @@ contract OmegaAI is ERC20, Ownable, Pausable {
         IERC20(tokenAddress).transfer(owner(), tokenAmount);
     }
 }
-```
