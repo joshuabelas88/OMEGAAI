@@ -1,0 +1,61 @@
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+
+contract OmegaAI is ERC20, Ownable, Pausable {
+    address payable foundationWallet = payable(0x9CcFA36F9AE3FFE2Fa950e1B63eD9B3A392749C0);
+    uint256 public constant SUPPLY = 10**12 * 10**18; // 1 trilhão de tokens
+    uint256 public constant WHALE_THRESHOLD = 10**10 * 10**18; // Limite para ser considerado uma "baleia"
+    uint256 public constant MEGA_WHALE_THRESHOLD = 100 * WHALE_THRESHOLD; // Limite para ser considerado uma "mega baleia"
+
+    constructor() ERC20("Omega AI", "OAI") {
+        _mint(msg.sender, SUPPLY);
+    }
+
+    function _transfer(address sender, address recipient, uint256 amount) internal override whenNotPaused {
+        uint256 foundationFee = amount / 10; // 10%
+        uint256 distributionFee = amount / 10; // 10%
+        uint256 netAmount = amount - foundationFee - distributionFee;
+
+        if (amount >= WHALE_THRESHOLD) {
+            uint256 whaleFee = amount / 5; // Taxa extra de 20% para vendas que excedem o limite de baleia
+            foundationFee += whaleFee;
+            netAmount -= whaleFee;
+        }
+
+        if (amount >= MEGA_WHALE_THRESHOLD) {
+            uint256 megaWhaleFee = amount / 4; // Taxa extra de 25% para vendas que excedem o limite de mega baleia
+            foundationFee += megaWhaleFee;
+            netAmount -= megaWhaleFee;
+        }
+
+        super._transfer(sender, foundationWallet, foundationFee);
+        super._transfer(sender, recipient, netAmount);
+
+        // Implementação da distribuição para detentores de tokens aqui
+        if(balanceOf(recipient) >= 100 * 10**6 * 10**18) { // se o destinatário tiver mais de 100 milhões de tokens
+            super._transfer(sender, recipient, distributionFee); // distribuir a taxa
+        }
+    }
+
+    function setFoundationWallet(address payable newWallet) external onlyOwner {
+        foundationWallet = newWallet;
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
+        IERC20(tokenAddress).transfer(owner(), tokenAmount);
+    }
+}
+```
